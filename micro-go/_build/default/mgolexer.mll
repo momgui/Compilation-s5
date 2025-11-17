@@ -11,15 +11,7 @@
     [ "package",    PACKAGE;
       "import",     IMPORT;
       "type",       TYPE;      
-      "struct",     STRUCT;    
-      "else",    ELSE;
-      "for",     FOR;
-      "func",    FUNC;
-      "return",  RETURN;
-      "var",     VAR;
-      "true",    TRUE;
-      "false",   FALSE;
-      "nil",     NIL;
+      "struct",     STRUCT;      
     ] ;
   fun s ->
     try  Hashtbl.find h s
@@ -34,17 +26,16 @@ let ident = alpha (alpha | digit)*
 let fmt = "fmt" 
   
 rule token = parse
-  | ['\n']              { new_line lexbuf; token lexbuf }
-  | [' ' '\t' '\r']+    { token lexbuf }
+  | ['\n']            { new_line lexbuf; token lexbuf }
+  | [' ' '\t' '\r']+  { token lexbuf }
 
-  | "/*"                { comment lexbuf; token lexbuf }
-  | "//" [^ '\n']* '\n' { new_line lexbuf; token lexbuf }
+  | "/*"              { comment lexbuf; token lexbuf }
 
-  | '"' fmt '"'         { STRING("fmt") }
+  | '"' fmt '"'       { STRING("fmt") }
 
-  | number as n         { try INT(Int64.of_string n) 
-                              with _ -> raise (Error "literal constant too large") }
-  | ident as id         { keyword_or_ident id }
+  | number as n  { try INT(Int64.of_string n) 
+                   with _ -> raise (Error "literal constant too large") }
+  | ident as id  { keyword_or_ident id }
 
   | ";"  { SEMI }
   | "("  { LPAR }

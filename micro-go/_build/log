@@ -1,0 +1,21 @@
+# dune build
+# OCAMLPARAM: unset
+# Shared cache: enabled-except-user-rules
+# Shared cache location: /home/momgui/.cache/dune/db
+# Workspace root: /home/momgui/Compilation-s5/micro-go
+# Auto-detected concurrency: 32
+# Dune context:
+#  { name = "default"
+#  ; kind = "default"
+#  ; profile = Dev
+#  ; merlin = true
+#  ; fdo_target_exe = None
+#  ; build_dir = In_build_dir "default"
+#  ; instrument_with = []
+#  }
+$ /usr/bin/ocamlc.opt -config > /tmp/dune_4ab84a_output
+$ (cd _build/default && /usr/bin/ocamldep.opt -modules -impl mgoc.ml) > _build/default/.mgoc.eobjs/dune__exe__Mgoc.impl.d
+$ (cd _build/default && /usr/bin/ocamlc.opt -w @1..3@5..28@30..39@43@46..47@49..57@61..62-40 -strict-sequence -strict-formats -short-paths -keep-locs -warn-error -A -g -bin-annot -I .mgoc.eobjs/byte -no-alias-deps -opaque -open Dune__exe -o .mgoc.eobjs/byte/dune__exe__Mgoc.cmo -c -impl mgoc.ml)
+$ (cd _build/default && /usr/bin/ocamlopt.opt -w @1..3@5..28@30..39@43@46..47@49..57@61..62-40 -strict-sequence -strict-formats -short-paths -keep-locs -warn-error -A -g -I .mgoc.eobjs/byte -I .mgoc.eobjs/native -intf-suffix .ml -no-alias-deps -opaque -open Dune__exe -o .mgoc.eobjs/native/dune__exe__Mgoc.cmx -c -impl mgoc.ml)
+$ (cd _build/default && /usr/bin/ocamlopt.opt -w @1..3@5..28@30..39@43@46..47@49..57@61..62-40 -strict-sequence -strict-formats -short-paths -keep-locs -warn-error -A -g -o mgoc.exe .mgoc.eobjs/native/dune__exe.cmx .mgoc.eobjs/native/dune__exe__Mgoast.cmx .mgoc.eobjs/native/dune__exe__Mgoparser.cmx .mgoc.eobjs/native/dune__exe__Mgolexer.cmx .mgoc.eobjs/native/dune__exe__Typechecker.cmx .mgoc.eobjs/native/dune__exe__Mgoc.cmx)
+# Promoting "_build/default/mgoc.exe" to "mgoc.exe"

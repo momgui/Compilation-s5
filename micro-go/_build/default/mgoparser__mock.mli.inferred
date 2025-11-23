@@ -1,0 +1,55 @@
+type token =
+    VAR
+  | TYPE
+  | TRUE
+  | STRUCT
+  | STRING of string
+  | STAR
+  | SLASH
+  | SEMI
+  | RPAR
+  | RETURN
+  | PLUS
+  | PERCENT
+  | PACKAGE
+  | OR
+  | NOT
+  | NIL
+  | NEQ
+  | MINUS
+  | LT
+  | LPAR
+  | LE
+  | INT of int64
+  | INCR
+  | IMPORT
+  | IF
+  | IDENT of string
+  | GT
+  | GE
+  | FUNC
+  | FOR
+  | FALSE
+  | EQ
+  | EOF
+  | END
+  | ELSE
+  | DOT
+  | DECR
+  | COMMA
+  | COLONASSIGN
+  | BEGIN
+  | ASSIGN
+  | AND
+exception Error
+val menhir_begin_marker : int
+val xv_varstyp : (Mgoast.ident * Mgoast.typ) list
+val xv_prog : Mgoast.program
+val xv_option_SEMI_ : unit option
+val xv_mgotype : Mgoast.typ
+val xv_loption_fields_ : (Mgoast.ident * Mgoast.typ) list list
+val xv_list_decl_ : Mgoast.decl list
+val xv_ident : Mgoast.ident
+val xv_fields : (Mgoast.ident * Mgoast.typ) list list
+val xv_decl : Mgoast.decl
+val menhir_end_marker : int

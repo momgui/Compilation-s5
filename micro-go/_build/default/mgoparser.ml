@@ -29,6 +29,7 @@ module MenhirBasics = struct
     | NOT
     | NIL
     | NEQ
+    | MULT
     | MINUS
     | LT
     | LPAR
@@ -36,7 +37,7 @@ module MenhirBasics = struct
     | INT of (
 # 10 "mgoparser.mly"
        (int64)
-# 40 "mgoparser.ml"
+# 41 "mgoparser.ml"
   )
     | INCR
     | IMPORT
@@ -44,7 +45,7 @@ module MenhirBasics = struct
     | IDENT of (
 # 11 "mgoparser.mly"
        (string)
-# 48 "mgoparser.ml"
+# 49 "mgoparser.ml"
   )
     | GT
     | GE
@@ -56,6 +57,7 @@ module MenhirBasics = struct
     | END
     | ELSE
     | DOT
+    | DIV
     | DECR
     | COMMA
     | COLONASSIGN
@@ -76,7 +78,7 @@ include MenhirBasics
   exception Error
 
 
-# 80 "mgoparser.ml"
+# 82 "mgoparser.ml"
 
 type ('s, 'r) _menhir_state = 
   | MenhirState03 : ('s _menhir_cell0_IDENT, _menhir_box_prog) _menhir_state
@@ -123,7 +125,7 @@ and 's _menhir_cell0_IDENT =
   | MenhirCell0_IDENT of 's * (
 # 11 "mgoparser.mly"
        (string)
-# 127 "mgoparser.ml"
+# 129 "mgoparser.ml"
 ) * Lexing.position * Lexing.position
 
 and ('s, 'r) _menhir_cell1_IMPORT = 
@@ -133,7 +135,7 @@ and 's _menhir_cell0_STRING =
   | MenhirCell0_STRING of 's * (
 # 12 "mgoparser.mly"
        (string)
-# 137 "mgoparser.ml"
+# 139 "mgoparser.ml"
 )
 
 and ('s, 'r) _menhir_cell1_TYPE = 
@@ -145,25 +147,25 @@ and _menhir_box_prog =
 let _menhir_action_01 =
   fun fl id ->
     (
-# 44 "mgoparser.mly"
+# 39 "mgoparser.mly"
   ( Struct { sname = id; fields = List.flatten fl; } )
-# 151 "mgoparser.ml"
+# 153 "mgoparser.ml"
      : (Mgoast.decl))
 
 let _menhir_action_02 =
   fun xt ->
     (
-# 55 "mgoparser.mly"
+# 50 "mgoparser.mly"
                                 ( [xt]      )
-# 159 "mgoparser.ml"
+# 161 "mgoparser.ml"
      : ((Mgoast.ident * Mgoast.typ) list list))
 
 let _menhir_action_03 =
   fun xt xtl ->
     (
-# 56 "mgoparser.mly"
+# 51 "mgoparser.mly"
                                 ( xt :: xtl )
-# 167 "mgoparser.ml"
+# 169 "mgoparser.ml"
      : ((Mgoast.ident * Mgoast.typ) list list))
 
 let _menhir_action_04 =
@@ -171,9 +173,9 @@ let _menhir_action_04 =
     let _endpos = _endpos_id_ in
     let _startpos = _startpos_id_ in
     (
-# 39 "mgoparser.mly"
+# 34 "mgoparser.mly"
              ( { loc = _startpos, _endpos; id = id } )
-# 177 "mgoparser.ml"
+# 179 "mgoparser.ml"
      : (Mgoast.ident))
 
 let _menhir_action_05 =
@@ -181,7 +183,7 @@ let _menhir_action_05 =
     (
 # 216 "<standard.mly>"
     ( [] )
-# 185 "mgoparser.ml"
+# 187 "mgoparser.ml"
      : (Mgoast.decl list))
 
 let _menhir_action_06 =
@@ -189,7 +191,7 @@ let _menhir_action_06 =
     (
 # 219 "<standard.mly>"
     ( x :: xs )
-# 193 "mgoparser.ml"
+# 195 "mgoparser.ml"
      : (Mgoast.decl list))
 
 let _menhir_action_07 =
@@ -197,7 +199,7 @@ let _menhir_action_07 =
     (
 # 145 "<standard.mly>"
     ( [] )
-# 201 "mgoparser.ml"
+# 203 "mgoparser.ml"
      : ((Mgoast.ident * Mgoast.typ) list list))
 
 let _menhir_action_08 =
@@ -205,15 +207,15 @@ let _menhir_action_08 =
     (
 # 148 "<standard.mly>"
     ( x )
-# 209 "mgoparser.ml"
+# 211 "mgoparser.ml"
      : ((Mgoast.ident * Mgoast.typ) list list))
 
 let _menhir_action_09 =
   fun s ->
     (
-# 48 "mgoparser.mly"
+# 43 "mgoparser.mly"
                  ( TStruct(s) )
-# 217 "mgoparser.ml"
+# 219 "mgoparser.ml"
      : (Mgoast.typ))
 
 let _menhir_action_10 =
@@ -221,7 +223,7 @@ let _menhir_action_10 =
     (
 # 111 "<standard.mly>"
     ( None )
-# 225 "mgoparser.ml"
+# 227 "mgoparser.ml"
      : (unit option))
 
 let _menhir_action_11 =
@@ -229,31 +231,31 @@ let _menhir_action_11 =
     (
 # 114 "<standard.mly>"
     ( Some x )
-# 233 "mgoparser.ml"
+# 235 "mgoparser.ml"
      : (unit option))
 
 let _menhir_action_12 =
   fun decls main ->
     (
-# 33 "mgoparser.mly"
+# 28 "mgoparser.mly"
     ( if main="main" then (false, decls) else raise Error)
-# 241 "mgoparser.ml"
+# 243 "mgoparser.ml"
      : (Mgoast.program))
 
 let _menhir_action_13 =
   fun decls fmt main ->
     (
-# 35 "mgoparser.mly"
+# 30 "mgoparser.mly"
     ( if main="main" && fmt="fmt" then (true, decls) else raise Error)
-# 249 "mgoparser.ml"
+# 251 "mgoparser.ml"
      : (Mgoast.program))
 
 let _menhir_action_14 =
   fun t x ->
     (
-# 52 "mgoparser.mly"
+# 47 "mgoparser.mly"
                                      ([(x,t)])
-# 257 "mgoparser.ml"
+# 259 "mgoparser.ml"
      : ((Mgoast.ident * Mgoast.typ) list))
 
 let _menhir_print_token : token -> string =
@@ -271,6 +273,8 @@ let _menhir_print_token : token -> string =
         "COMMA"
     | DECR ->
         "DECR"
+    | DIV ->
+        "DIV"
     | DOT ->
         "DOT"
     | ELSE ->
@@ -309,6 +313,8 @@ let _menhir_print_token : token -> string =
         "LT"
     | MINUS ->
         "MINUS"
+    | MULT ->
+        "MULT"
     | NEQ ->
         "NEQ"
     | NIL ->

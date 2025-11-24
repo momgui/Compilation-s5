@@ -1,9 +1,9 @@
-# dune exec ./mgoc.exe tests/div.go
+# dune build ./mgoc.exe
 # OCAMLPARAM: unset
-# Shared cache: enabled-except-user-rules
+# Shared cache: disabled
 # Shared cache location: /home/momgui/.cache/dune/db
-# Workspace root: /home/momgui/Compilation-s5/micro-go
-# Auto-detected concurrency: 32
+# Workspace root: /home/momgui/Bureau/compilation/Compilation-s5/micro-go
+# Auto-detected concurrency: 4
 # Dune context:
 #  { name = "default"
 #  ; kind = "default"
@@ -11,6 +11,13 @@
 #  ; merlin = true
 #  ; fdo_target_exe = None
 #  ; build_dir = In_build_dir "default"
+#  ; installed_env =
+#      map
+#        { "INSIDE_DUNE" :
+#            "/home/momgui/Bureau/compilation/Compilation-s5/micro-go/_build/default"
+#        ; "OCAML_COLOR" : "always"
+#        ; "OPAMCOLOR" : "always"
+#        }
 #  ; instrument_with = []
 #  }
-$ /usr/bin/ocamlc.opt -config > /tmp/dune_1aecb5_output
+$ /usr/bin/ocamlc.opt -config > /tmp/dune_cfe813_output

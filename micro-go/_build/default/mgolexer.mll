@@ -26,7 +26,7 @@
     fun s ->
       try Hashtbl.find h s
       with Not_found -> IDENT s
-        
+
 
   let decode_string s =
     let b = Buffer.create (String.length s) in
@@ -56,14 +56,14 @@ let hexa = ['0'-'9' 'a'-'f' 'A'-'F']
 let number = "0x" hexa+ | "0X" hexa+ | digit+
 let alpha = ['a'-'z' 'A'-'Z' '_']
 let ident = alpha (alpha | digit)*
-let str_char =
+let char =
   [^ '"' '\\'] 
   | "\\\""
   | "\\\\" 
   | "\\n"
   | "\\t"
 
-  
+
 rule token = parse
   | ['\n']              { new_line lexbuf; token lexbuf }
   | [' ' '\t' '\r']+    { token lexbuf }
@@ -75,7 +75,7 @@ rule token = parse
   | number as n         { try INT(Int64.of_string n) 
                               with _ -> raise (Error "literal constant too large") }
 
-  | '"' (str_char* as s) '"' { STRING(decode_string(s)) }
+  | '"' (char* as s) '"' { STRING(decode_string(s)) }
 
   | ident as id         { keyword_or_ident id }
 
@@ -105,6 +105,8 @@ rule token = parse
   | ":=" { COLONASSIGN }
   | "++" { INCR }
   | "--" { DECR }
+  | "*"  { MULT }
+  | "/"  { DIV }
 
   | ","  { COMMA }
   | "."  { DOT }

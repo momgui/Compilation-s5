@@ -27,7 +27,7 @@
     fun s ->
       try Hashtbl.find h s
       with Not_found -> IDENT s
-        
+
 
   let decode_string s =
     let b = Buffer.create (String.length s) in
@@ -54,7 +54,7 @@
 # 55 "mgolexer.ml"
 let __ocaml_lex_tables = {
   Lexing.lex_base =
-   "\000\000\221\255\222\255\224\255\225\255\002\000\002\000\001\000\
+   "\000\000\219\255\220\255\222\255\223\255\002\000\002\000\001\000\
     \232\255\019\000\048\000\031\000\032\000\033\000\035\000\242\255\
     \243\255\244\255\245\255\246\255\247\255\079\000\136\000\154\000\
     \164\000\095\000\003\000\255\255\001\000\253\255\251\255\252\255\
@@ -62,9 +62,9 @@ let __ocaml_lex_tables = {
     \240\255\239\255\238\255\227\255\226\255\231\255\230\255\228\255\
     \129\000\252\255\253\255\091\000\255\255\254\255";
   Lexing.lex_backtrk =
-   "\255\255\255\255\255\255\255\255\255\255\033\000\033\000\033\000\
-    \255\255\021\000\020\000\019\000\018\000\032\000\026\000\255\255\
-    \255\255\255\255\255\255\255\255\255\255\007\000\033\000\005\000\
+   "\255\255\255\255\255\255\255\255\255\255\035\000\035\000\035\000\
+    \255\255\021\000\020\000\019\000\018\000\034\000\026\000\255\255\
+    \255\255\255\255\255\255\255\255\255\255\007\000\035\000\005\000\
     \005\000\022\000\001\000\255\255\255\255\255\255\255\255\255\255\
     \255\255\255\255\005\000\005\000\255\255\255\255\255\255\255\255\
     \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
@@ -272,11 +272,11 @@ let
   | 6 ->
 let
 # 78 "mgolexer.mll"
-                      s
+                  s
 # 277 "mgolexer.ml"
 = Lexing.sub_lexeme lexbuf (lexbuf.Lexing.lex_start_pos + 1) (lexbuf.Lexing.lex_curr_pos + -1) in
 # 78 "mgolexer.mll"
-                             ( STRING(decode_string(s)) )
+                         ( STRING(decode_string(s)) )
 # 281 "mgolexer.ml"
 
   | 7 ->
@@ -400,29 +400,39 @@ let
 # 401 "mgolexer.ml"
 
   | 30 ->
-# 109 "mgolexer.mll"
-         ( COMMA )
+# 108 "mgolexer.mll"
+         ( MULT )
 # 406 "mgolexer.ml"
 
   | 31 ->
-# 110 "mgolexer.mll"
-         ( DOT )
+# 109 "mgolexer.mll"
+         ( DIV )
 # 411 "mgolexer.ml"
 
   | 32 ->
 # 111 "mgolexer.mll"
-         ( NOT )
+         ( COMMA )
 # 416 "mgolexer.ml"
 
   | 33 ->
-# 115 "mgolexer.mll"
-         ( raise (Error ("unknown character : " ^ lexeme lexbuf)) )
+# 112 "mgolexer.mll"
+         ( DOT )
 # 421 "mgolexer.ml"
 
   | 34 ->
-# 116 "mgolexer.mll"
-         ( EOF )
+# 113 "mgolexer.mll"
+         ( NOT )
 # 426 "mgolexer.ml"
+
+  | 35 ->
+# 117 "mgolexer.mll"
+         ( raise (Error ("unknown character : " ^ lexeme lexbuf)) )
+# 431 "mgolexer.ml"
+
+  | 36 ->
+# 118 "mgolexer.mll"
+         ( EOF )
+# 436 "mgolexer.ml"
 
   | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf;
       __ocaml_lex_token_rec lexbuf __ocaml_lex_state
@@ -432,24 +442,24 @@ and comment lexbuf =
 and __ocaml_lex_comment_rec lexbuf __ocaml_lex_state =
   match Lexing.engine __ocaml_lex_tables __ocaml_lex_state lexbuf with
       | 0 ->
-# 119 "mgolexer.mll"
-         ( new_line lexbuf; comment lexbuf )
-# 438 "mgolexer.ml"
-
-  | 1 ->
-# 120 "mgolexer.mll"
-         ( () )
-# 443 "mgolexer.ml"
-
-  | 2 ->
 # 121 "mgolexer.mll"
-         ( comment lexbuf )
+         ( new_line lexbuf; comment lexbuf )
 # 448 "mgolexer.ml"
 
-  | 3 ->
+  | 1 ->
 # 122 "mgolexer.mll"
-         ( raise (Error "unterminated comment") )
+         ( () )
 # 453 "mgolexer.ml"
+
+  | 2 ->
+# 123 "mgolexer.mll"
+         ( comment lexbuf )
+# 458 "mgolexer.ml"
+
+  | 3 ->
+# 124 "mgolexer.mll"
+         ( raise (Error "unterminated comment") )
+# 463 "mgolexer.ml"
 
   | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf;
       __ocaml_lex_comment_rec lexbuf __ocaml_lex_state

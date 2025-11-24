@@ -19,6 +19,7 @@ type token =
   | NOT
   | NIL
   | NEQ
+  | MULT
   | MINUS
   | LT
   | LPAR
@@ -38,6 +39,7 @@ type token =
   | END
   | ELSE
   | DOT
+  | DIV
   | DECR
   | COMMA
   | COLONASSIGN

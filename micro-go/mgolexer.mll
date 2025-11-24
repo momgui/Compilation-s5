@@ -26,7 +26,7 @@
     fun s ->
       try Hashtbl.find h s
       with Not_found -> IDENT s
-        
+
 
   let decode_string s =
     let b = Buffer.create (String.length s) in
@@ -52,7 +52,8 @@
 }
 
 let digit = ['0'-'9']
-let number = digit+
+let hexa = ['0'-'9' 'a'-'f' 'A'-'F']
+let number = "0x" hexa+ | "0X" hexa+ | digit+
 let alpha = ['a'-'z' 'A'-'Z' '_']
 let ident = alpha (alpha | digit)*
 let str_char =
@@ -62,18 +63,21 @@ let str_char =
   | "\\n"
   | "\\t"
 
-  
+
 rule token = parse
-  | ['\n']            { new_line lexbuf; token lexbuf }
-  | [' ' '\t' '\r']+  { token lexbuf }
+  | ['\n']              { new_line lexbuf; token lexbuf }
+  | [' ' '\t' '\r']+    { token lexbuf }
 
   | "/*"                { comment lexbuf; token lexbuf }
   | "//" [^ '\n']* '\n' { new_line lexbuf; token lexbuf }
   | "//" [^ '\n']* eof  { EOF }
 
-  | number as n  { try INT(Int64.of_string n) 
-                   with _ -> raise (Error "literal constant too large") }
-  | ident as id  { keyword_or_ident id }
+  | number as n         { try INT(Int64.of_string n) 
+                              with _ -> raise (Error "literal constant too large") }
+
+  | '"' (str_char* as s) '"' { STRING(decode_string(s)) }
+
+  | ident as id         { keyword_or_ident id }
 
   | ";"  { SEMI }
   | "("  { LPAR }
@@ -81,6 +85,32 @@ rule token = parse
   | "{"  { BEGIN }
   | "}"  { END }
   | "*"  { STAR }
+
+  | "==" { EQ }
+  | "!=" { NEQ }
+  | "<=" { LE }
+  | ">=" { GE }
+  | "<"  { LT }
+  | ">"  { GT }
+
+  | "+"  { PLUS }
+  | "-"  { MINUS }
+  | "/"  { SLASH }
+  | "%"  { PERCENT }
+
+  | "&&" { AND }
+  | "||" { OR }
+
+  | "="  { ASSIGN }
+  | ":=" { COLONASSIGN }
+  | "++" { INCR }
+  | "--" { DECR }
+
+  | ","  { COMMA }
+  | "."  { DOT }
+  | "!"  { NOT }
+
+
 
   | _    { raise (Error ("unknown character : " ^ lexeme lexbuf)) }
   | eof  { EOF }

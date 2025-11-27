@@ -1,7 +1,7 @@
 (**
    Petit Go : un petit langage impératif avec structures inspiré de Go
 *)
- 
+  
 (* Types déclarés pour les champs, pour les variables, et pour les 
    paramètres et résultats des méthodes. *)
 type typ =

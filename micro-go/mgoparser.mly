@@ -51,7 +51,7 @@ decl:
   | TYPE id=ident STRUCT BEGIN fl=loption(fields) END SEMI
     { Struct { sname = id; fields = List.flatten fl; } }
   | FUNC fname=ident LPAR params=separated_list(COMMA,param) RPAR 
-    ret=return_type body=bloc {Fun {fname; params; ret; body}}
+    ret=return_type body=bloc {Fun { fname; params = List.flatten params; return = ret; body }}
 ;
 
 bloc:
@@ -75,10 +75,15 @@ return_type:
 ;
 
 type:
-  | STAR name=IDENT  { TStruct name }
-  | "int"            { TInt }
-  | "bool"           { TBool }
-  | "string"         { TString }
+  | STAR name=IDENT       { TStruct name }
+  | id=IDENT              {
+      match id with
+      | "int"    -> TInt
+      | "bool"   -> TBool
+      | "string" -> TString
+      | _        -> parse_error "unknown type"
+    }
+
 ;
 
 varstyp:
@@ -107,12 +112,12 @@ expr_desc:
     args=separated_list(COMMA,expr) RPAR  
       {match fn.id,args with
        | "new", [{edesc= Var ty;_ }] -> New ty.id
-       | _ -                         -> Call(fn,args) }
+       | _                          -> Call(fn,args) }
 | mod_=ident DOT meth=ident LPAR 
     args=separated_list(COMMA,expr) RPAR  
       { if mod_.id = "fmt" && meth.id = "Print" 
         then Print args
-        else raise (Error "module unknown")}
+        else parse_error "module unknown"}
 | MINUS e=expr %prec UMINUS               { Unop (Opp,e)}
 | NOT e=expr                              { Unop (Not, e) }
 | lhs=expr PLUS rhs=expr                  { Binop (Add, lhs, rhs) }
@@ -133,3 +138,39 @@ expr_desc:
 instr:
  i = instr_desc {mk_instr i $startpos $endpos }
 ;
+
+instr_desc:
+| i=instr_simple                            { i }
+| i=instr_if                                { i }
+| b=bloc                                    { Block b }
+| VAR ids=separated_nonempty_list(COMMA,ident) 
+  t=option(type) 
+  e=option(ASSIGN separated_nonempty_list(COMMA,expr))       
+                                            { Vars(ids, t, e)}
+| RETURN es=separated_list(COMMA,expr)      { Return(es) }
+| FOR b=bloc {
+    let loc = Parsing.rhs_start_pos 1 in        (* donne la localisation de la boucle FOR. Normalement ça ne devrait
+                                                jamais causer d'erreur mais apparement c'est plus propre *)
+    let e = { edesc = Bool true; eloc = loc } in
+    For (e, b)
+  }
+| FOR e=expr b=bloc                         { For(e, b) }
+| FOR i=option(instr_simple) SEMI e=expr 
+    SEMI i2=option(instr_simple) b=bloc     { For(e, b) }
+;
+
+instr_simple:
+| e=expr                                    { Expr e }
+| e=expr INCR                               { Inc e }
+| e=expr DECR                               { Dec e }
+| es=separated_nonempty_list(COMMA,expr)
+    ASSIGN es2=separated_nonempty_list(COMMA,expr)    { Set (es,es2) }
+| es=separated_nonempty_list(COMMA,Var(ident))
+    COLONASSIGN es2=separated_nonempty_list(COMMA,expr)    { Set (es,es2) }
+;
+
+instr_if:
+| IF e=expr b=bloc                          { If(e, b, []) }
+| IF e=expr b=bloc ELSE b2=bloc             { If(e, b, b2) }
+| IF e=expr b=bloc ELSE 
+  i=[mk_instr d sp ep]                      { If(e, b, i) }

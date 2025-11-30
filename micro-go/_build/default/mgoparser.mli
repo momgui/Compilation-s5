@@ -8,7 +8,6 @@ type token =
   | STRUCT
   | STRING of (string)
   | STAR
-  | SLASH
   | SEMI
   | RPAR
   | RETURN
@@ -19,7 +18,6 @@ type token =
   | NOT
   | NIL
   | NEQ
-  | MULT
   | MINUS
   | LT
   | LPAR

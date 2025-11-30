@@ -5,7 +5,6 @@ type token =
   | STRUCT
   | STRING of string
   | STAR
-  | SLASH
   | SEMI
   | RPAR
   | RETURN
@@ -16,7 +15,6 @@ type token =
   | NOT
   | NIL
   | NEQ
-  | MULT
   | MINUS
   | LT
   | LPAR
@@ -44,14 +42,45 @@ type token =
   | ASSIGN
   | AND
 exception Error
+val mk_expr :
+  Mgoast.expr_desc -> Lexing.position -> Lexing.position -> Mgoast.expr
+val mk_instr :
+  Mgoast.instr_desc -> Lexing.position -> Lexing.position -> Mgoast.instr
 val menhir_begin_marker : int
 val xv_varstyp : (Mgoast.ident * Mgoast.typ) list
+val xv_typ : Mgoast.typ
+val xv_seq : Mgoast.seq
+val xv_separated_nonempty_list_COMMA_typ_ : Mgoast.typ list
+val xv_separated_nonempty_list_COMMA_param_ :
+  (Mgoast.ident * Mgoast.typ) list list
+val xv_separated_nonempty_list_COMMA_ident_ : Mgoast.ident list
+val xv_separated_nonempty_list_COMMA_expr_ : Mgoast.expr list
+val xv_separated_list_COMMA_typ_ : Mgoast.typ list
+val xv_separated_list_COMMA_param_ : (Mgoast.ident * Mgoast.typ) list list
+val xv_separated_list_COMMA_expr_ : Mgoast.expr list
+val xv_return_type : Mgoast.typ list
 val xv_prog : Mgoast.program
+val xv_preceded_ASSIGN_separated_nonempty_list_COMMA_expr__ :
+  Mgoast.expr list
+val xv_param : (Mgoast.ident * Mgoast.typ) list
+val xv_option_typ_ : Mgoast.typ option
+val xv_option_preceded_ASSIGN_separated_nonempty_list_COMMA_expr___ :
+  Mgoast.expr list option
 val xv_option_SEMI_ : unit option
-val xv_mgotype : Mgoast.typ
+val xv_loption_separated_nonempty_list_COMMA_typ__ : Mgoast.typ list
+val xv_loption_separated_nonempty_list_COMMA_param__ :
+  (Mgoast.ident * Mgoast.typ) list list
+val xv_loption_separated_nonempty_list_COMMA_expr__ : Mgoast.expr list
 val xv_loption_fields_ : (Mgoast.ident * Mgoast.typ) list list
 val xv_list_decl_ : Mgoast.decl list
+val xv_instr_simple : Mgoast.instr_desc
+val xv_instr_if : Mgoast.instr_desc
+val xv_instr_desc : Mgoast.instr_desc
+val xv_instr : Mgoast.instr
 val xv_ident : Mgoast.ident
 val xv_fields : (Mgoast.ident * Mgoast.typ) list list
+val xv_expr_desc : Mgoast.expr_desc
+val xv_expr : Mgoast.expr
 val xv_decl : Mgoast.decl
+val xv_bloc : Mgoast.seq
 val menhir_end_marker : int

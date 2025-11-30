@@ -6,6 +6,21 @@
 
   exception Error of string
 
+  (* Pour l'insertion automatique des points-virgules *)
+  let pending_semi = ref false
+
+  (* Tokens après lesquels on insère un ; automatiquement si suivi d'une nouvelle ligne *)
+  let insert_semi_after = function
+    | IDENT _ | INT _ | STRING _ 
+    | TRUE | FALSE | NIL | RETURN
+    | RPAR | END | INCR | DECR -> true
+    | _ -> false
+
+  (* Wrapper pour mettre à jour pending_semi après chaque token *)
+  let emit tok =
+    pending_semi := insert_semi_after tok;
+    tok
+
   let keyword_or_ident =
     let h = Hashtbl.create 17 in
     List.iter (fun (s, k) -> Hashtbl.add h s k)
@@ -65,52 +80,64 @@ let char =
 
 
 rule token = parse
-  | ['\n']              { new_line lexbuf; token lexbuf }
+  | ['\n']              { new_line lexbuf; 
+                          if !pending_semi then begin
+                            pending_semi := false;
+                            SEMI
+                          end else
+                            token lexbuf }
   | [' ' '\t' '\r']+    { token lexbuf }
 
   | "/*"                { comment lexbuf; token lexbuf }
-  | "//" [^ '\n']* '\n' { new_line lexbuf; token lexbuf }
-  | "//" [^ '\n']* eof  { EOF }
+  | "//" [^ '\n']* '\n' { new_line lexbuf;
+                          if !pending_semi then begin
+                            pending_semi := false;
+                            SEMI
+                          end else
+                            token lexbuf }
+  | "//" [^ '\n']* eof  { if !pending_semi then begin
+                            pending_semi := false;
+                            SEMI
+                          end else
+                            EOF }
 
-  | number as n         { try INT(Int64.of_string n) 
-                              with _ -> raise (Error "literal constant too large") }
+  | number as n         { emit (try INT(Int64.of_string n) 
+                              with _ -> raise (Error "literal constant too large")) }
 
-  | '"' (char* as s) '"' { STRING(decode_string(s)) }
+  | '"' (char* as s) '"' { emit (STRING(decode_string(s))) }
 
-  | ident as id         { keyword_or_ident id }
+  | ident as id         { emit (keyword_or_ident id) }
 
-  | ";"  { SEMI }
-  | "("  { LPAR }
-  | ")"  { RPAR }
-  | "{"  { BEGIN }
-  | "}"  { END }
-  | "*"  { STAR }
+  | ";"  { emit SEMI }
+  | "("  { emit LPAR }
+  | ")"  { emit RPAR }
+  | "{"  { emit BEGIN }
+  | "}"  { emit END }
+  | "*"  { emit STAR }
 
-  | "==" { EQ }
-  | "!=" { NEQ }
-  | "<=" { LE }
-  | ">=" { GE }
-  | "<"  { LT }
-  | ">"  { GT }
+  | "==" { emit EQ }
+  | "!=" { emit NEQ }
+  | "<=" { emit LE }
+  | ">=" { emit GE }
+  | "<"  { emit LT }
+  | ">"  { emit GT }
 
-  | "+"  { PLUS }
-  | "-"  { MINUS }
-  | "/"  { SLASH }
-  | "%"  { PERCENT }
+  | "+"  { emit PLUS }
+  | "-"  { emit MINUS }
+  | "%"  { emit PERCENT }
 
-  | "&&" { AND }
-  | "||" { OR }
+  | "&&" { emit AND }
+  | "||" { emit OR }
 
-  | "="  { ASSIGN }
-  | ":=" { COLONASSIGN }
-  | "++" { INCR }
-  | "--" { DECR }
-  | "*"  { MULT }
-  | "/"  { DIV }
+  | "="  { emit ASSIGN }
+  | ":=" { emit COLONASSIGN }
+  | "++" { emit INCR }
+  | "--" { emit DECR }
+  | "/"  { emit DIV }
 
-  | ","  { COMMA }
-  | "."  { DOT }
-  | "!"  { NOT }
+  | ","  { emit COMMA }
+  | "."  { emit DOT }
+  | "!"  { emit NOT }
 
 
 

@@ -1,6 +1,5 @@
 %{
 
-  open Lexing
   open Mgoast
 
   exception Error
@@ -23,10 +22,9 @@
 %token EQ NEQ LT GT LE GE ASSIGN PLUS MINUS STAR DIV PERCENT
 %token DOT COMMA NOT AND OR COLONASSIGN INCR DECR
 %token EOF
-%right ASSIGN COLONASSIGN
 %left OR
 %left AND
-%nonassoc EQ NEQ LT GT LE GE /* == != < > <= >= */
+%left EQ NEQ LT GT LE GE /* == != < > <= >= */
 %left PLUS MINUS
 %left STAR DIV PERCENT
 %right NOT UMINUS
@@ -51,7 +49,7 @@ ident:
 decl:
   | TYPE id=ident STRUCT BEGIN fl=loption(fields) END SEMI
     { Struct { sname = id; fields = List.flatten fl; } }
-  | FUNC fname=ident LPAR params=separated_list(COMMA,param) RPAR 
+  | FUNC fname=ident LPAR params=separated_list(COMMA,param) COMMA? RPAR 
     ret=return_type body=bloc SEMI? {Fun { fname; params = List.flatten params; return = ret; body }}
 ;
 
@@ -73,7 +71,7 @@ param:
 return_type:
 |                                          { [] }
 | t=typ                                    { [t] }
-| LPAR ts=separated_list(COMMA,typ) RPAR   { ts }
+| LPAR ts=separated_list(COMMA,typ) COMMA? RPAR   { ts }
 ;
 
 typ:
@@ -112,12 +110,12 @@ expr_desc:
 | LPAR e1=expr RPAR                       { e1.edesc }
 | e=expr DOT id=ident                     { Dot(e,id) }
 | fn=ident LPAR 
-    args=separated_list(COMMA,expr) RPAR  
+    args=separated_list(COMMA,expr) COMMA? RPAR  
       {match fn.id,args with
        | "new", [{edesc= Var ty;_ }] -> New ty.id
        | _                          -> Call(fn,args) }
 | e=expr DOT meth=ident LPAR 
-    args=separated_list(COMMA,expr) RPAR  
+    args=separated_list(COMMA,expr) COMMA? RPAR  
       { match e.edesc with
         | Var mod_ when mod_.id = "fmt" && meth.id = "Print" -> Print args
         | _ -> failwith "method calls not supported"

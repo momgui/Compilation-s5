@@ -36,6 +36,10 @@ let () =
     if !parse_only then exit 0;
     let f = Typechecker.prog  f in
     if !type_only then exit 0;
+    let code = Compile.tr_prog f in
+    let c = open_out (Filename.chop_suffix file ".go" ^ ".s") in
+    Mips.print_program c code;
+    close_out c
 
   with
     | Mgolexer.Error s ->

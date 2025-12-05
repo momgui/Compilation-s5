@@ -67,6 +67,7 @@ val xv_option_typ_ : Mgoast.typ option
 val xv_option_preceded_ASSIGN_separated_nonempty_list_COMMA_expr___ :
   Mgoast.expr list option
 val xv_option_SEMI_ : unit option
+val xv_option_COMMA_ : unit option
 val xv_loption_separated_nonempty_list_COMMA_typ__ : Mgoast.typ list
 val xv_loption_separated_nonempty_list_COMMA_param__ :
   (Mgoast.ident * Mgoast.typ) list list

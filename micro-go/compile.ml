@@ -7,6 +7,7 @@ let new_label =
 
 let strings = Hashtbl.create 16
 let fenv = Hashtbl.create 16
+let struct_layout = Hashtbl.create 16
 
 type loc = Local of int | Global of string
 type env = (string * (loc * typ)) list
@@ -28,6 +29,19 @@ let rec tr_expr env e = match e.edesc with
     in
     la t0 l, TString
   | Nil -> li t0 0, TStruct "nil"
+  | New n ->
+    let (size, _) = Hashtbl.find struct_layout n in
+    li a0 size
+    @@ li v0 9
+    @@ syscall
+    @@ move t0 v0, TStruct n
+  | Dot(e, id) ->
+    let (c, ty) = tr_expr env e in
+    let s_name = match ty with TStruct n -> n | _ -> failwith "Dot sur non-struct" in
+    let (_, fields) = Hashtbl.find struct_layout s_name in
+    let (offset, ty_field) = Hashtbl.find fields id.id in
+    c
+    @@ lw t0 offset t0, ty_field
   | Var(id) ->
     let (loc, ty) = lookup id.id env in
     (match loc with
@@ -89,7 +103,6 @@ let rec tr_expr env e = match e.edesc with
       acc @@ c @@ move a0 t0 @@ print_call
     ) nop args in
     code, TInt
-  | _ -> failwith "A compléter"
 
 
 let rec tr_seq env fpoffset = function
@@ -131,6 +144,15 @@ and tr_instr env fpoffset i = match i.idesc with
           (match loc with
            | Local o -> sw t0 o "$fp"
            | Global l -> la t1 l @@ sw t0 0 t1)
+        | Dot(e, id) ->
+          let (cdst, ty_e) = tr_expr env e in
+          let s_name = match ty_e with TStruct n -> n | _ -> failwith "Dot sur non-struct" in
+          let (_, fields) = Hashtbl.find struct_layout s_name in
+          let (offset, _) = Hashtbl.find fields id.id in
+          push t0 (* save src value *)
+          @@ cdst    (* compute struct address into t0 *)
+          @@ pop t1  (* restore src value into t1 *)
+          @@ sw t1 offset t0
         | _ -> failwith "Affectation complexe non supportée")
   | Set _ -> failwith "Affectation multiple non supportée"
   | Vars(ids, ty_opt, s) ->
@@ -150,6 +172,15 @@ and tr_instr env fpoffset i = match i.idesc with
        (match loc with
         | Local o -> lw t0 o "$fp" @@ addi t0 t0 1 @@ sw t0 o "$fp"
         | Global l -> la t1 l @@ lw t0 0 t1 @@ addi t0 t0 1 @@ sw t0 0 t1)
+     | Dot(obj, id) ->
+       let (c, ty) = tr_expr env obj in
+       let s_name = match ty with TStruct n -> n | _ -> failwith "Dot sur non-struct" in
+       let (_, fields) = Hashtbl.find struct_layout s_name in
+       let (offset, _) = Hashtbl.find fields id.id in
+       c
+       @@ lw t1 offset t0
+       @@ addi t1 t1 1
+       @@ sw t1 offset t0
      | _ -> failwith "Inc sur non-variable")
   | Dec(e) ->
     (match e.edesc with
@@ -158,21 +189,33 @@ and tr_instr env fpoffset i = match i.idesc with
        (match loc with
         | Local o -> lw t0 o "$fp" @@ addi t0 t0 (-1) @@ sw t0 o "$fp"
         | Global l -> la t1 l @@ lw t0 0 t1 @@ addi t0 t0 (-1) @@ sw t0 0 t1)
+     | Dot(obj, id) ->
+       let (c, ty) = tr_expr env obj in
+       let s_name = match ty with TStruct n -> n | _ -> failwith "Dot sur non-struct" in
+       let (_, fields) = Hashtbl.find struct_layout s_name in
+       let (offset, _) = Hashtbl.find fields id.id in
+       c
+       @@ lw t1 offset t0
+       @@ addi t1 t1 (-1)
+       @@ sw t1 offset t0
      | _ -> failwith "Dec sur non-variable")
   | Block(s) -> tr_seq env fpoffset s
   | Expr(e) -> let (c, _) = tr_expr env e in c
-  | Return([e]) -> let (c, _) = tr_expr env e in c @@ move sp "$fp" @@ pop "$fp" @@ jr ra
-  | Return([]) -> move sp "$fp" @@ pop "$fp" @@ jr ra
+  | Return([e]) -> let (c, _) = tr_expr env e in c @@ move sp "$fp" @@ pop "$fp" @@ pop ra @@ jr ra
+  | Return([]) -> move sp "$fp" @@ pop "$fp" @@ pop ra @@ jr ra
   | Return _ -> failwith "Retours multiples non supportés"
 
 let tr_fun df =
-  let env = List.mapi (fun i (id, ty) -> (id.id, (Local (4 + 4 * i), ty))) df.params in
+  let n = List.length df.params in
+  let env = List.mapi (fun i (id, ty) -> (id.id, (Local (8 + 4 * (n - 1 - i)), ty))) df.params in
   label df.fname.id
+  @@ push ra
   @@ push "$fp"
   @@ move "$fp" "$sp"
   @@ tr_seq env (-4) df.body
   @@ move "$sp" "$fp"
   @@ pop "$fp"
+  @@ pop ra
   @@ jr ra
 
 let rec tr_ldecl = function
@@ -183,8 +226,17 @@ let rec tr_ldecl = function
 let tr_prog decls =
   List.iter (function
     | Fun df -> Hashtbl.add fenv df.fname.id (List.map snd df.params, df.return)
-    | _ -> ()
+    | Struct s ->
+      let size = List.length s.fields * 4 in
+      let fields = Hashtbl.create 8 in
+      List.iteri (fun i (id, ty) -> Hashtbl.add fields id.id (i * 4, ty)) s.fields;
+      Hashtbl.add struct_layout s.sname.id (size, fields)
   ) decls;
   let text = tr_ldecl decls in
   let data = Hashtbl.fold (fun s l acc -> label l @@ asciiz (Printf.sprintf "\"%s\"" s) @@ acc) strings nop in
-  { text; data }
+  let main_code =
+    jal "main"
+    @@ li v0 10
+    @@ syscall
+  in
+  { text = main_code @@ text; data }

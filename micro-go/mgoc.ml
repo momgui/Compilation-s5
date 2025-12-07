@@ -4,7 +4,7 @@ open Lexing
 let usage = "usage: mgoc [options] file.go"
 
 let parse_only = ref false
-let type_only = ref true
+let type_only = ref false
     
 let spec =
   [ "--parse-only", Arg.Set parse_only, "  stops after parsing";

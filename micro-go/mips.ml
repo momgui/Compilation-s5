@@ -9,8 +9,10 @@ type program = { text: asm; data: asm; }
 
 let t0 = "$t0"
 let t1 = "$t1"
+let t2 = "$t2"
 let a0 = "$a0"
 let v0 = "$v0"
+let v1 = "$v1"
 let sp = "$sp"
 let ra = "$ra"
 let zero = "$zero"

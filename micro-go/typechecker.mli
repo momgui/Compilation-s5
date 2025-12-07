@@ -47,9 +47,9 @@ module Env :
     val add_seq : (key * 'a) Seq.t -> 'a t -> 'a t
     val of_seq : (key * 'a) Seq.t -> 'a t
   end
-type tenv = Mgoast.typ Env.t
+type tenv = (Mgoast.typ * Mgoast.location) Env.t
 type fenv = (Mgoast.typ list * Mgoast.typ list) Env.t
 type senv = (Mgoast.ident * Mgoast.typ) list Env.t
 val dummy : string
-val add_env : (Mgoast.ident * 'a) list -> 'a Env.t -> 'a Env.t
+val add_env : (Mgoast.ident * 'a) list -> ('a * Mgoast.location) Env.t -> ('a * Mgoast.location) Env.t
 val prog : bool * Mgoast.decl list -> Mgoast.decl list

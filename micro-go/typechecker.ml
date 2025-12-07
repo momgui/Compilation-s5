@@ -8,6 +8,11 @@ let type_error loc ty_actual ty_expected =
            (typ_to_string ty_expected) (typ_to_string ty_actual))
 
 module Env = Map.Make(String)
+module StringSet = Set.Make(String)
+module LocSet = Set.Make(struct 
+  type t = Mgoast.location 
+  let compare = compare 
+end)
 
 (* 3 environnements pour stocker
      les variables avec leur type,
@@ -15,17 +20,20 @@ module Env = Map.Make(String)
      les structures avec leurs champs
 *)
     
-type tenv = typ Env.t
+type tenv = (typ * Mgoast.location) Env.t
 type fenv = (typ list * typ list) Env.t 
 type senv = (ident * typ) list Env.t
 
 let dummy = "_"
 
 let add_env l tenv =
-  List.fold_left (fun env (x, t) -> if x.id = dummy then env else Env.add x.id t env) tenv l
+  List.fold_left (fun env (x, t) -> if x.id = dummy then env else Env.add x.id (t, x.loc) env) tenv l
 
 let prog (fmt,ld) =
   let has_print = ref false in
+  let used_vars = ref LocSet.empty in
+  let mark_used loc = used_vars := LocSet.add loc !used_vars in
+
   (* collecte les noms des fonctions et des structures sans les vérifier *)
   let (fenv,senv) =
     List.fold_left
@@ -105,7 +113,9 @@ let prog (fmt,ld) =
                   else error e.eloc "Equality operator expects same types"
           )
     | Var id -> 
-        [try Env.find id.id tenv with Not_found -> error id.loc ("Variable " ^ id.id ^ " not found")]
+        let (t, loc) = try Env.find id.id tenv with Not_found -> error id.loc ("Variable " ^ id.id ^ " not found") in
+        mark_used loc;
+        [t]
     | Dot (e, id) -> 
         let t = type_expr_one e tenv in
         (match t with
@@ -117,7 +127,7 @@ let prog (fmt,ld) =
          | _ -> error e.eloc "Dot access requires a struct pointer")
     | New s -> 
         if Env.mem s senv then [TStruct s] else error e.eloc ("Unknown struct " ^ s)
-    | Nil -> failwith "Nil has no type by itself" 
+    | Nil -> error e.eloc "Nil cannot be used without an explicit type context"
     | Call (f, args) ->
         let (ptypes, rtypes) = try Env.find f.id fenv with Not_found -> error f.loc ("Function " ^ f.id ^ " not found") in
         if List.length args <> List.length ptypes then error f.loc "Wrong number of arguments";
@@ -144,7 +154,9 @@ let prog (fmt,ld) =
 
   let type_lvalue e tenv =
     match e.edesc with
-    | Var id -> (try Env.find id.id tenv with Not_found -> error e.eloc (Printf.sprintf "Variable '%s' non déclarée." id.id))
+    | Var id -> 
+        let (t, _) = try Env.find id.id tenv with Not_found -> error e.eloc (Printf.sprintf "Variable '%s' non déclarée." id.id) in
+        t
     | Dot (e, id) -> 
         let t = type_expr_one e tenv in
         (match t with
@@ -158,11 +170,16 @@ let prog (fmt,ld) =
   in
 
   let rec check_instr i ret tenv = match i.idesc with
-    | Expr e -> ignore (type_expr e tenv); tenv
+    | Expr e -> ignore (type_expr e tenv); (tenv, [])
     | Inc e | Dec e ->
+        (match e.edesc with 
+         | Var id -> 
+             let (_, loc) = try Env.find id.id tenv with Not_found -> error id.loc ("Variable " ^ id.id ^ " not found") in
+             mark_used loc
+         | _ -> ());
         let t = type_lvalue e tenv in 
         if t <> TInt then type_error e.eloc t TInt;
-        tenv
+        (tenv, [])
     | Set (es1,es2) -> 
       if List.length es1 = List.length es2 then
         List.iter2 (fun e1 e2 ->
@@ -190,20 +207,20 @@ let prog (fmt,ld) =
             if t1 <> t2 then type_error e1.eloc t2 t1
         ) es1 t2s
       );
-      tenv
+      (tenv, [])
 
     | If (b,s1,s2) -> 
         check_expr b TBool tenv;
-        check_seq s1 ret tenv;
-        check_seq s2 ret tenv;
-        tenv
+        check_seq s1 ret tenv Env.empty;
+        check_seq s2 ret tenv Env.empty;
+        (tenv, [])
     | For (e,s) -> 
         check_expr e TBool tenv;
-        check_seq s ret tenv;
-        tenv
+        check_seq s ret tenv Env.empty;
+        (tenv, [])
     | Block s -> 
-        check_seq s ret tenv;
-        tenv
+        check_seq s ret tenv Env.empty;
+        (tenv, [])
     | Vars (ids, topt, init_seq) ->
         let new_types = 
           match topt, init_seq with
@@ -231,9 +248,10 @@ let prog (fmt,ld) =
           | _ -> error i.iloc "Invalid variable declaration"
         in
         let tenv' = List.fold_left2 (fun env id t -> 
-            if id.id = dummy then env else Env.add id.id t env
+            if id.id = dummy then env else Env.add id.id (t, id.loc) env
         ) tenv ids new_types in
-        tenv'
+        let new_vars = List.map (fun id -> (id.id, id.loc)) ids in
+        (tenv', new_vars)
 
     | Return es -> 
         if List.length es = List.length ret then
@@ -249,14 +267,25 @@ let prog (fmt,ld) =
            if List.length t_es <> List.length ret then error i.iloc "Wrong number of return values";
            List.iter2 (fun t expected -> if t <> expected then type_error i.iloc t expected) t_es ret
         );
-        tenv
+        (tenv, [])
 
-  and check_seq s ret tenv = 
+  and check_seq s ret tenv declared_here = 
     match s with
-    | [] -> ()
+    | [] -> 
+        Env.iter (fun id loc ->
+          if not (LocSet.mem loc !used_vars) then
+             error loc ("Unused variable " ^ id)
+        ) declared_here
     | i :: rest ->
-        let tenv' = check_instr i ret tenv in
-        check_seq rest ret tenv'
+        let (tenv', new_vars) = check_instr i ret tenv in
+        let declared_here' = List.fold_left (fun acc (v, loc) ->
+            if v <> dummy then
+               if Env.mem v acc then
+                  error i.iloc ("Variable " ^ v ^ " already declared in this block")
+               else Env.add v loc acc
+            else acc
+        ) declared_here new_vars in
+        check_seq rest ret tenv' declared_here'
   in
   
   let rec returns_on_all_paths s =
@@ -272,7 +301,10 @@ let prog (fmt,ld) =
 
   let check_function f = 
     let tenv = add_env f.params Env.empty in
-    check_seq f.body f.return tenv;
+    let declared_params = List.fold_left (fun acc (id, _) -> 
+        if id.id <> dummy then Env.add id.id id.loc acc else acc
+    ) Env.empty f.params in
+    check_seq f.body f.return tenv declared_params;
     if f.return <> [] && not (returns_on_all_paths f.body) then
       error f.fname.loc "Function does not return on all paths"
   in 

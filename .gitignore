@@ -1,0 +1,15 @@
+# OCaml / dune
+_build/
+*.install
+*.exe
+*.cmi
+*.cmo
+*.cmx
+
+# Editor
+.merlin
+*~
+.#*
+
+# OS
+.DS_Store
